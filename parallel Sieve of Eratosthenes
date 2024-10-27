@@ -1,0 +1,70 @@
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char** argv) {
+    int rank, size;
+    int n;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+
+    if (rank == 0) {  
+          printf("Enter the upper limit (n): ");
+        scanf("%d", &n);
+}
+
+        double execution_start =MPI_Wtime(); 
+
+        if(rank==0){ 
+        for (int i = 2; i < n; i++) {
+            MPI_Send(&i, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+        }
+        } else {
+              int prime, number;
+              int termination_received = 0;
+      
+              MPI_Recv(&prime, 1, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      
+      
+              printf("Prime number found: %d\n", prime);
+      
+              while (1) {
+      
+                  MPI_Recv(&number, 1, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      
+                  if (number == -1) {
+                      termination_received = 1;
+                      if (rank < size - 1) {
+                          MPI_Send(&number, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
+                      }
+                      break;
+                  }
+
+                    if (number % prime != 0) {
+                        if (rank < size - 1) {
+                            MPI_Send(&number, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
+                        } else {
+                            printf("Prime number found: %d\n", number);
+                        }
+                    }
+                }
+        
+                if (rank < size - 1 && !termination_received) {
+                    MPI_Send(&prime, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
+                }
+            }
+
+
+
+               if(rank==0){
+                double execution_end = MPI_Wtime();
+                double execution_time = execution_end - execution_start;
+                printf("Elapsed time = %f seconds\n", execution_time);
+            }
+                MPI_Finalize();
+                return 0;
+            }
+
